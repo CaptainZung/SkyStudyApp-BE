@@ -6,8 +6,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.hashers import check_password, make_password
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse
+from django.utils.timezone import now, timedelta
 
-from .models import Vocabulary, User, Example, Topic
+from .models import Vocabulary, User, Example, Topic, YourDictionary
 from .serializers import (
     VocabularySerializer,
     VocabularyWordSerializer,
@@ -16,6 +17,7 @@ from .serializers import (
     RegisterSerializer,
     LoginSerializer,
     UserSerializer,
+    YourDictionarySerializer
 )
 
 
@@ -239,3 +241,69 @@ class VocabularyDetailView(APIView):
             "image": request.build_absolute_uri(vocabulary.image.url) if vocabulary.image else None,
         }
         return Response(data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def AddWordYourDictionaryApi(request):
+    word = request.data.get('word')
+    vietnamese = request.data.get('vietnamese')  # Get vietnamese translation
+    username = request.data.get('user')
+
+    # Kiểm tra xem user có được truyền vào không
+    if not username:
+        return Response({"error": "User is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Kiểm tra xem word có được truyền vào không
+    if not word:
+        return Response({"error": "Word is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Kiểm tra xem vietnamese có được truyền vào không
+    if not vietnamese:
+        return Response({"error": "Vietnamese translation is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Tìm user từ username
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Kiểm tra nếu từ đã tồn tại
+    try:
+        existing_entry = YourDictionary.objects.get(user=user, word=word)
+        return Response({"error": "Word already exists in YourDictionary"}, status=status.HTTP_400_BAD_REQUEST)
+    except YourDictionary.DoesNotExist:
+        pass
+    # Tạo bản ghi mới
+    your_dictionary_entry = YourDictionary.objects.create(user=user, word=word, vietnamese=vietnamese)
+
+    # Serialize bản ghi và trả về
+    serializer = YourDictionarySerializer(your_dictionary_entry)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+@api_view(['GET'])
+def YourDictionaryAPI(request):
+    username = request.data.get('user')  # Lấy từ body thay vì query params
+
+    # Kiểm tra xem username có được truyền vào không
+    if not username:
+        return Response({"error": "User is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Tìm user từ username
+    try:
+        user = User.objects.get(username=username)
+        user_id = user._id  # Lấy user ID từ user tìm được
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Tính ngày từ hôm nay đến 6 ngày trước
+    today = now().date()
+    seven_days_ago = today - timedelta(days=6)
+    words_last_7_days = YourDictionary.objects.filter(user=user, learned_date__range=[seven_days_ago, today])
+
+    # Tạo thống kê theo ngày
+    stats = {}
+    for i in range(7):
+        day = seven_days_ago + timedelta(days=i)
+        count = words_last_7_days.filter(learned_date=day).count()
+        stats[day.strftime('%Y-%m-%d')] = count
+
+    return Response({"user_id": user_id, "username": user.username, "stats": stats}, status=status.HTTP_200_OK)

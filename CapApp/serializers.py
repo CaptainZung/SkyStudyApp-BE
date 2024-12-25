@@ -1,6 +1,6 @@
 # CapApp/serializers.py
 from rest_framework import serializers
-from .models import Vocabulary, User, Example, Topic
+from .models import Vocabulary, User, Example, Topic, YourDictionary
 from django.contrib.auth.hashers import make_password
 
 class TopicSerializer(serializers.ModelSerializer):
@@ -71,3 +71,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [ 'username', 'password'] 
+        
+class YourDictionarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = YourDictionary
+        fields = ['user', 'word', 'vietnamese', 'learned_date']

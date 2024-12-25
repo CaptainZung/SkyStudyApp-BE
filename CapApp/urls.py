@@ -15,6 +15,7 @@ urlpatterns=[
     path('Register/', views.RegisterView.as_view()),
     path('Login/', views.LoginView.as_view()),
     path('User/', views.UserListView.as_view()),
-    path('User/UpdatePin/', views.UpdatePinView.as_view())
-
+    path('User/UpdatePin/', views.UpdatePinView.as_view()),
+    path('AddYourWord/',views.AddWordYourDictionaryApi),
+    path('YourDictionary/',views.YourDictionaryAPI),
 ]

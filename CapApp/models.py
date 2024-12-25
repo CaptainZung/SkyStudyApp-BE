@@ -37,6 +37,7 @@ class User(models.Model):
     phone = models.CharField(max_length=15, unique=True)
     password = models.CharField(max_length=128)
     pin = models.CharField(max_length=6, default="123456")
+    avatar = models.ImageField(upload_to='user_avatars/', blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.password.startswith('pbkdf2_sha256$'):
@@ -47,3 +48,12 @@ class User(models.Model):
 
     def __str__(self):
         return self.username
+
+class YourDictionary(models.Model):
+    user = models.ForeignKey(User, related_name="your_dictionary", on_delete=models.CASCADE)
+    word = models.CharField(max_length=100)
+    vietnamese = models.CharField(max_length=100)  # New vietnamese field
+    learned_date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.word} - {self.learned_date}"

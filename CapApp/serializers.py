@@ -40,7 +40,8 @@ class VocabularyImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vocabulary
         fields = ['image', 'icon'] # Chỉ cập nhật các trường liên quan đến hình ảnh
-
+    def create(self, validated_data):
+        raise serializers.ValidationError("Creating new instances is not allowed in this context")
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

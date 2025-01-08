@@ -18,4 +18,5 @@ urlpatterns=[
     path('User/UpdatePin/', views.UpdatePinView.as_view()),
     path('AddYourWord/',views.AddWordYourDictionaryApi),
     path('YourDictionary/',views.YourDictionaryAPI),
+    path('YourDictionaryChart/',views.YourDictionaryChart),
 ]

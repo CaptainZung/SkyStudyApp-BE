@@ -194,7 +194,7 @@ class LoginView(APIView):
             try:
                 user = User.objects.get(username=username)
                 if check_password(password, user.password):
-                    return Response({"message": "Login successful", "user_id": user._id}, status=status.HTTP_200_OK)
+                    return Response({"message": "Login successful", "user_id": user._id, "usename": user.username}, status=status.HTTP_200_OK)
                 else:
                     return Response({"error": "Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
             except User.DoesNotExist:
@@ -279,8 +279,8 @@ def AddWordYourDictionaryApi(request):
     # Serialize bản ghi và trả về
     serializer = YourDictionarySerializer(your_dictionary_entry)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
-@api_view(['GET'])
-def YourDictionaryAPI(request):
+@api_view(['POST'])
+def YourDictionaryChart(request):
     username = request.data.get('user')  # Lấy từ body thay vì query params
 
     # Kiểm tra xem username có được truyền vào không
@@ -306,4 +306,25 @@ def YourDictionaryAPI(request):
         count = words_last_7_days.filter(learned_date=day).count()
         stats[day.strftime('%Y-%m-%d')] = count
 
-    return Response({"user_id": user_id, "username": user.username, "stats": stats}, status=status.HTTP_200_OK)
+    return Response({"username": user.username, "stats": stats}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def YourDictionaryAPI(request):
+    username = request.data.get('user')
+
+    # Kiểm tra xem username có được truyền vào không
+    if not username:
+        return Response({"error": "User is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Tìm user từ username
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Lấy tất cả các từ đã học của user
+    learned_words = YourDictionary.objects.filter(user=user)
+    serializer = YourDictionarySerializer(learned_words, many=True)
+
+    return Response({ "learned_words": serializer.data}, status=status.HTTP_200_OK)
